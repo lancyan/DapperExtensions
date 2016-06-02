@@ -1,0 +1,12 @@
+D:\Downloads\Dapper-Extensions-master\Dapper-Extensions-master\DapperExtensions\bin\Debug\DapperExtensions.dll
+D:\Downloads\Dapper-Extensions-master\Dapper-Extensions-master\DapperExtensions\bin\Debug\DapperExtensions.pdb
+D:\Downloads\Dapper-Extensions-master\Dapper-Extensions-master\DapperExtensions\bin\Debug\Dapper.dll
+D:\Downloads\Dapper-Extensions-master\Dapper-Extensions-master\DapperExtensions\bin\Debug\Dapper.pdb
+D:\Downloads\Dapper-Extensions-master\Dapper-Extensions-master\DapperExtensions\bin\Debug\Dapper.xml
+D:\Downloads\Dapper-Extensions-master\Dapper-Extensions-master\DapperExtensions\obj\Debug\DapperExtensions.dll
+D:\Downloads\Dapper-Extensions-master\Dapper-Extensions-master\DapperExtensions\obj\Debug\DapperExtensions.pdb
+D:\Projects\YXP.API\DapperExtensions\bin\Debug\DapperExtensions.dll
+D:\Projects\YXP.API\DapperExtensions\bin\Debug\DapperExtensions.pdb
+D:\Projects\YXP.API\DapperExtensions\obj\Debug\DapperExtensions.dll
+D:\Projects\YXP.API\DapperExtensions\obj\Debug\DapperExtensions.pdb
+D:\Projects\YXP.API\DapperExtensions\obj\Debug\DapperExtensions.csprojResolveAssemblyReference.cache
