@@ -11,7 +11,7 @@ namespace DapperExtensions.Sql
         IDapperExtensionsConfiguration Configuration { get; }
         
         string Select(IClassMapper classMap, IPredicate predicate, IList<ISort> sort, IDictionary<string, object> parameters);
-        string SelectPaged(IClassMapper classMap, IPredicate predicate, IList<ISort> sort, int page, int resultsPerPage, IDictionary<string, object> parameters);
+        string SelectPaged(IClassMapper classMap, IPredicate predicate, IList<ISort> sort, int pageIndex, int pageSize, IDictionary<string, object> parameters);
         string SelectSet(IClassMapper classMap, IPredicate predicate, IList<ISort> sort, int firstResult, int maxResults, IDictionary<string, object> parameters);
         string Count(IClassMapper classMap, IPredicate predicate, IDictionary<string, object> parameters);
 
@@ -60,7 +60,7 @@ namespace DapperExtensions.Sql
             return sql.ToString();
         }
 
-        public virtual string SelectPaged(IClassMapper classMap, IPredicate predicate, IList<ISort> sort, int page, int resultsPerPage, IDictionary<string, object> parameters)
+        public virtual string SelectPaged(IClassMapper classMap, IPredicate predicate, IList<ISort> sort, int pageIndex, int pageSize, IDictionary<string, object> parameters)
         {
             if (sort == null || !sort.Any())
             {
@@ -77,14 +77,13 @@ namespace DapperExtensions.Sql
                 GetTableName(classMap)));
             if (predicate != null)
             {
-                innerSql.Append(" WHERE ")
-                    .Append(predicate.GetSql(this, parameters));
+                innerSql.Append(" WHERE ").Append(predicate.GetSql(this, parameters));
             }
 
             string orderBy = sort.Select(s => GetColumnName(classMap, s.PropertyName, false) + (s.Ascending ? " ASC" : " DESC")).AppendStrings();
             innerSql.Append(" ORDER BY " + orderBy);
 
-            string sql = Configuration.Dialect.GetPagingSql(innerSql.ToString(), page, resultsPerPage, parameters);
+            string sql = Configuration.Dialect.GetPagingSql(innerSql.ToString(), pageIndex, pageSize, parameters);
             return sql;
         }
 
@@ -100,13 +99,10 @@ namespace DapperExtensions.Sql
                 throw new ArgumentNullException("Parameters");
             }
 
-            StringBuilder innerSql = new StringBuilder(string.Format("SELECT {0} FROM {1}",
-                BuildSelectColumns(classMap),
-                GetTableName(classMap)));
+            StringBuilder innerSql = new StringBuilder(string.Format("SELECT {0} FROM {1}", BuildSelectColumns(classMap), GetTableName(classMap)));
             if (predicate != null)
             {
-                innerSql.Append(" WHERE ")
-                    .Append(predicate.GetSql(this, parameters));
+                innerSql.Append(" WHERE ").Append(predicate.GetSql(this, parameters));
             }
 
             string orderBy = sort.Select(s => GetColumnName(classMap, s.PropertyName, false) + (s.Ascending ? " ASC" : " DESC")).AppendStrings();

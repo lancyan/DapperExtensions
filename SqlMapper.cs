@@ -1624,7 +1624,8 @@ this IDbConnection cnn, string sql, object param, IDbTransaction transaction, in
             {
                 if (reader != null)
                 {
-                    if (!reader.IsClosed) try { cmd.Cancel(); }
+                    if (!reader.IsClosed) 
+                        try { cmd.Cancel(); }
                         catch { /* don't spoil the existing exception */ }
                     reader.Dispose();
                 }

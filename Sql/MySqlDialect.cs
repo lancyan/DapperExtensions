@@ -21,10 +21,10 @@ namespace DapperExtensions.Sql
             return "SELECT CONVERT(LAST_INSERT_ID(), SIGNED INTEGER) AS ID";
         }
 
-        public override string GetPagingSql(string sql, int page, int resultsPerPage, IDictionary<string, object> parameters)
-        {            
-            int startValue = page * resultsPerPage;
-            return GetSetSql(sql, startValue, resultsPerPage, parameters);
+        public override string GetPagingSql(string sql, int pageIndex, int pageSize, IDictionary<string, object> parameters)
+        {
+            int startValue = pageIndex * pageSize;
+            return GetSetSql(sql, startValue, pageSize, parameters);
         }
 
         public override string GetSetSql(string sql, int firstResult, int maxResults, IDictionary<string, object> parameters)

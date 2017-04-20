@@ -12,10 +12,10 @@ namespace DapperExtensions.Sql
             return "SELECT LASTVAL() AS Id";
         }
 
-        public override string GetPagingSql(string sql, int page, int resultsPerPage, IDictionary<string, object> parameters)
+        public override string GetPagingSql(string sql, int pageIndex, int pageSize, IDictionary<string, object> parameters)
         {
-            int startValue = page * resultsPerPage;
-            return GetSetSql(sql, startValue, resultsPerPage, parameters);
+            int startValue = pageIndex * pageSize;
+            return GetSetSql(sql, startValue, pageSize, parameters);
         }
 
         public override string GetSetSql(string sql, int firstResult, int maxResults, IDictionary<string, object> parameters)

@@ -16,31 +16,55 @@ namespace DapperExtensions
     {
         ISqlGenerator SqlGenerator { get; }
         T Get<T>(IDbConnection connection, dynamic id, IDbTransaction transaction, int? commandTimeout) where T : class;
+
+        T Get<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         void Insert<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         dynamic Insert<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         bool Update<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         int Update<T>(IDbConnection connection, dynamic updateProperties, dynamic keyProperties, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         int Update(IDbConnection connection, string sql, IDbTransaction trans, int? timeout);
+
         bool Delete<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout) where T : class;
-        bool Delete<T>(IDbConnection connection, object predicate, IDbTransaction transaction, int? commandTimeout) where T : class;
+
+        bool Delete<T>(IDbConnection connection, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         bool DeleteById<T>(IDbConnection connection, dynamic id, IDbTransaction transaction, int? commandTimeout) where T : class;
-        IEnumerable<T> GetList<T>(IDbConnection connection, object predicate, IList<ISort> sort, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class;
-        IEnumerable<T> GetPage<T>(IDbConnection connection, object predicate, IList<ISort> sort, int page, int resultsPerPage, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class;
-        IEnumerable<T> GetSet<T>(IDbConnection connection, object predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class;
+
+        IEnumerable<T> GetList<T>(IDbConnection connection, IPredicate predicate, IList<ISort> sort, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class;
+
+        IEnumerable<T> GetPage<T>(IDbConnection connection, IPredicate predicate, IList<ISort> sort, int pageIndex, int pageSize, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class;
+
+        IEnumerable<T> GetSet<T>(IDbConnection connection, IPredicate predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class;
+
         IEnumerable<dynamic> Query(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered);
+
         IEnumerable<dynamic> Query(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered);
-        IEnumerable<K> Query<K>(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where K : class;
-        IEnumerable<K> Query<K>(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where K : class;
+
+        IEnumerable<T> Query<T>(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where T : class;
+
+        IEnumerable<T> Query<T>(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where T : class;
+
         IEnumerable<T> Where<T>(IDbConnection connection, Expression<Func<T, bool>> exp, string orderBy, IDbTransaction trans, int? timeout, bool buffered) where T : class;
+
         IEnumerable<T> Where<T>(IDbConnection connection, Expression<Func<T, bool>> exp, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, int? timeout, bool buffered) where T : class;
+
         IEnumerable<T> Where<T>(IDbConnection connection, string where, string orderBy, IDbTransaction trans, int? timeout, bool buffered) where T : class;
+
         IEnumerable<T> Where<T>(IDbConnection connection, string where, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, int? timeout, bool buffered) where T : class;
 
-        int Count<T>(IDbConnection connection, object predicate, IDbTransaction transaction, int? commandTimeout) where T : class;
+        int Count<T>(IDbConnection connection, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         int Count<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         int Count<T>(IDbConnection connection, string sql, string where, IDbTransaction transaction, int? commandTimeout) where T : class;
 
         dynamic Execute<T>(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction trans, int? timeout, bool buffered);
+
         IMultipleResultReader GetMultiple(IDbConnection connection, GetMultiplePredicate predicate, IDbTransaction transaction, int? commandTimeout);
     }
 
@@ -59,6 +83,13 @@ namespace DapperExtensions
             IPredicate predicate = GetIdPredicate(classMap, id);
             T result = GetList<T>(connection, classMap, predicate, null, transaction, commandTimeout, true).SingleOrDefault();
             return result;
+        }
+
+        public T Get<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class
+        {
+            string str = SqlExpession.Where<T>(exp);
+            string sql = string.Format("select * from {0} where {1}", typeof(T).Name, str);
+            return connection.Query<T>(sql, null, transaction, false, commandTimeout, CommandType.Text).SingleOrDefault();
         }
 
         public void Insert<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout) where T : class
@@ -178,35 +209,35 @@ namespace DapperExtensions
             return Delete<T>(connection, classMap, predicate, transaction, commandTimeout);
         }
 
-        public bool Delete<T>(IDbConnection connection, object predicate, IDbTransaction transaction, int? commandTimeout) where T : class
+        public bool Delete<T>(IDbConnection connection, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
             IPredicate wherePredicate = GetPredicate(classMap, predicate);
             return Delete<T>(connection, classMap, wherePredicate, transaction, commandTimeout);
         }
 
-        public IEnumerable<T> GetList<T>(IDbConnection connection, object predicate, IList<ISort> sort, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
+        public IEnumerable<T> GetList<T>(IDbConnection connection, IPredicate predicate, IList<ISort> sort, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
             IPredicate wherePredicate = GetPredicate(classMap, predicate);
             return GetList<T>(connection, classMap, wherePredicate, sort, transaction, commandTimeout, true);
         }
 
-        public IEnumerable<T> GetPage<T>(IDbConnection connection, object predicate, IList<ISort> sort, int page, int resultsPerPage, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
+        public IEnumerable<T> GetPage<T>(IDbConnection connection, IPredicate predicate, IList<ISort> sort, int pageIndex, int pageSize, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
             IPredicate wherePredicate = GetPredicate(classMap, predicate);
-            return GetPage<T>(connection, classMap, wherePredicate, sort, page, resultsPerPage, transaction, commandTimeout, buffered);
+            return GetPage<T>(connection, classMap, wherePredicate, sort, pageIndex, pageSize, transaction, commandTimeout, buffered);
         }
 
-        public IEnumerable<T> GetSet<T>(IDbConnection connection, object predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
+        public IEnumerable<T> GetSet<T>(IDbConnection connection, IPredicate predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
             IPredicate wherePredicate = GetPredicate(classMap, predicate);
             return GetSet<T>(connection, classMap, wherePredicate, sort, firstResult, maxResults, transaction, commandTimeout, buffered);
         }
 
-        public int Count<T>(IDbConnection connection, object predicate, IDbTransaction transaction, int? commandTimeout) where T : class
+        public int Count<T>(IDbConnection connection, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
             IPredicate wherePredicate = GetPredicate(classMap, predicate);
@@ -275,10 +306,10 @@ namespace DapperExtensions
             return connection.Query<T>(sql, dynamicParameters, transaction, buffered, commandTimeout, CommandType.Text);
         }
 
-        protected IEnumerable<T> GetPage<T>(IDbConnection connection, IClassMapper classMap, IPredicate predicate, IList<ISort> sort, int page, int resultsPerPage, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
+        protected IEnumerable<T> GetPage<T>(IDbConnection connection, IClassMapper classMap, IPredicate predicate, IList<ISort> sort, int pageIndex, int pageSize, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
         {
             Dictionary<string, object> parameters = new Dictionary<string, object>();
-            string sql = SqlGenerator.SelectPaged(classMap, predicate, sort, page, resultsPerPage, parameters);
+            string sql = SqlGenerator.SelectPaged(classMap, predicate, sort, pageIndex, pageSize, parameters);
             DynamicParameters dynamicParameters = new DynamicParameters();
             foreach (var parameter in parameters)
             {
@@ -516,7 +547,7 @@ namespace DapperExtensions
                 var tp = item.PropertyType;
                 if (tp.Equals(typeof(string)) || tp.Equals(typeof(DateTime)))
                 {
-                    s1.Append(item.Name + "='" + item.GetValue(updateDict,null) + "',");
+                    s1.Append(item.Name + "='" + item.GetValue(updateDict, null) + "',");
                 }
                 else
                 {
@@ -613,9 +644,5 @@ namespace DapperExtensions
         {
             return connection.Query<T>(pName, paras, transaction, buffered, commandTimeout, CommandType.StoredProcedure);
         }
-
-
-
-     
     }
 }

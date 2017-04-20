@@ -19,7 +19,13 @@ namespace DapperExtensions
         void Rollback();
         void RunInTransaction(Action action);
         T RunInTransaction<T>(Func<T> func);
+        IMultipleResultReader GetMultiple(GetMultiplePredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null);
+        void ClearCache();
+        Guid GetNextGuid();
+        IClassMapper GetMap<T>() where T : class;
+
         T Get<T>(dynamic id, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
+        T Get<T>(Expression<Func<T, bool>> exp, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         void Insert<T>(IEnumerable<T> entities, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         dynamic Insert<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         bool Update<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
@@ -27,14 +33,14 @@ namespace DapperExtensions
         int Update<T>(dynamic updateDict, dynamic keyDict, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
 
         bool Delete<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
-        bool Delete<T>(object predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
+        bool Delete<T>(IPredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
 
         bool DeleteById<T>(dynamic id, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
-        IEnumerable<T> GetList<T>(object predicate, IList<ISort> sort, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class;
+        IEnumerable<T> GetList<T>(IPredicate predicate, IList<ISort> sort, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class;
 
-        IEnumerable<T> GetPage<T>(object predicate, IList<ISort> sort, int page, int resultsPerPage, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class;
+        IEnumerable<T> GetPage<T>(IPredicate predicate, IList<ISort> sort, int pageIndex, int pageSize, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class;
 
-        IEnumerable<T> GetSet<T>(object predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class;
+        IEnumerable<T> GetSet<T>(IPredicate predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class;
 
         IEnumerable<dynamic> Query(string sql, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null);
         IEnumerable<dynamic> Query(string sql, string orderBy, int pageIndex, int pageSize, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null);
@@ -50,17 +56,13 @@ namespace DapperExtensions
 
         IEnumerable<T> Where<T>(string where, string orderBy, int pageIndex, int pageSize, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class;
 
-        int Count<T>(object predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
-
+        int Count<T>(IPredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         int Count<T>(string sql = null, string where = null, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         int Count<T>(Expression<Func<T, bool>> exp, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
 
         dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = true);
 
-        IMultipleResultReader GetMultiple(GetMultiplePredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null);
-        void ClearCache();
-        Guid GetNextGuid();
-        IClassMapper GetMap<T>() where T : class;
+      
     }
 
     public class Database : IDatabase
@@ -166,6 +168,12 @@ namespace DapperExtensions
             return (T)_dapper.Get<T>(Connection, id, transaction, commandTimeout);
         }
 
+        public T Get<T>(Expression<Func<T, bool>> exp, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
+        {
+            transaction = transaction ?? _transaction;
+            return (T)_dapper.Get<T>(Connection, exp, transaction, commandTimeout);
+        }
+
         public void Insert<T>(IEnumerable<T> entities, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             transaction = transaction ?? _transaction;
@@ -201,7 +209,7 @@ namespace DapperExtensions
             return _dapper.Delete(Connection, entity, transaction, commandTimeout);
         }
 
-        public bool Delete<T>(object predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
+        public bool Delete<T>(IPredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             transaction = transaction ?? _transaction;
             return _dapper.Delete<T>(Connection, predicate, transaction, commandTimeout);
@@ -211,25 +219,25 @@ namespace DapperExtensions
             transaction = transaction ?? _transaction;
             return _dapper.DeleteById<T>(Connection, id, _transaction, commandTimeout);
         }
-        public IEnumerable<T> GetList<T>(object predicate, IList<ISort> sort, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class
+        public IEnumerable<T> GetList<T>(IPredicate predicate, IList<ISort> sort, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class
         {
             transaction = transaction ?? _transaction;
             return _dapper.GetList<T>(Connection, predicate, sort, transaction, commandTimeout, buffered);
         }
 
-        public IEnumerable<T> GetPage<T>(object predicate, IList<ISort> sort, int page, int resultsPerPage, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class
+        public IEnumerable<T> GetPage<T>(IPredicate predicate, IList<ISort> sort, int pageIndex, int pageSize, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class
         {
             transaction = transaction ?? _transaction;
-            return _dapper.GetPage<T>(Connection, predicate, sort, page, resultsPerPage, transaction, commandTimeout, buffered);
+            return _dapper.GetPage<T>(Connection, predicate, sort, pageIndex, pageSize, transaction, commandTimeout, buffered);
         }
 
-        public IEnumerable<T> GetSet<T>(object predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class
+        public IEnumerable<T> GetSet<T>(IPredicate predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class
         {
             transaction = transaction ?? _transaction;
             return _dapper.GetSet<T>(Connection, predicate, sort, firstResult, maxResults, transaction, commandTimeout, buffered);
         }
 
-        public int Count<T>(object predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
+        public int Count<T>(IPredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             transaction = transaction ?? _transaction;
             return _dapper.Count<T>(Connection, predicate, transaction, commandTimeout);
