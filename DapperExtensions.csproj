@@ -62,7 +62,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Mapper\PropertyMap.cs" />
     <Compile Include="ReflectionHelper.cs" />
-    <Compile Include="Reflector\Class1.cs" />
     <Compile Include="Reflector\DynamicMethodEmit.cs" />
     <Compile Include="Reflector\MethodWrapper.cs" />
     <Compile Include="Reflector\PropertyWrapper.cs" />
