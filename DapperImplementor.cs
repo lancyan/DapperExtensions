@@ -594,17 +594,12 @@ namespace DapperExtensions
             {
                 var tp = item.PropertyType;
                 string itemName = item.Name;
-<<<<<<< HEAD
+
                 //if (d2.Count(p => p.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase) && tp.Equals(p.PropertyType)) > 0)
                 //{
                 //    continue;
                 //}
-=======
-                if (d2.Count(p => p.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase) && tp.Equals(p.PropertyType)) > 0)
-                {
-                    continue;
-                }
->>>>>>> origin/master
+
                 if (tp.Equals(typeof(string)) || tp.Equals(typeof(DateTime)))
                 {
                     s1.Append(itemName + "='" + item.GetValue(updateDict, null) + "',");

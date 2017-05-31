@@ -1,5 +1,0 @@
-D:\Projects\YXP.API\DapperExtensions\bin\Release\DapperExtensions.dll
-D:\Projects\YXP.API\DapperExtensions\bin\Release\DapperExtensions.pdb
-D:\Projects\YXP.API\DapperExtensions\obj\Release\DapperExtensions.dll
-D:\Projects\YXP.API\DapperExtensions\obj\Release\DapperExtensions.pdb
-D:\Projects\YXP.API\DapperExtensions\obj\Release\DapperExtensions.csprojResolveAssemblyReference.cache
