@@ -10,6 +10,7 @@ D:\Projects\YXP.API\DapperExtensions\bin\Debug\DapperExtensions.pdb
 D:\Projects\YXP.API\DapperExtensions\obj\Debug\DapperExtensions.dll
 D:\Projects\YXP.API\DapperExtensions\obj\Debug\DapperExtensions.pdb
 D:\Projects\YXP.API\DapperExtensions\obj\Debug\DapperExtensions.csprojResolveAssemblyReference.cache
+<<<<<<< HEAD
 D:\Projects\DapperExtensions\bin\Debug\DapperExtensions.dll
 D:\Projects\DapperExtensions\bin\Debug\DapperExtensions.pdb
 D:\Projects\DapperExtensions\obj\Debug\DapperExtensions.dll
@@ -19,3 +20,9 @@ E:\Develop\github\DapperExtensions\bin\Debug\DapperExtensions.dll
 E:\Develop\github\DapperExtensions\bin\Debug\DapperExtensions.pdb
 E:\Develop\github\DapperExtensions\obj\Debug\DapperExtensions.dll
 E:\Develop\github\DapperExtensions\obj\Debug\DapperExtensions.pdb
+=======
+E:\Develop\github\DapperExtensions\obj\Debug\DapperExtensions.dll
+E:\Develop\github\DapperExtensions\obj\Debug\DapperExtensions.pdb
+E:\Develop\github\DapperExtensions\bin\Debug\DapperExtensions.dll
+E:\Develop\github\DapperExtensions\bin\Debug\DapperExtensions.pdb
+>>>>>>> origin/master
