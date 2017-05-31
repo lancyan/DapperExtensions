@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.ComponentModel.DataAnnotations;
 
 namespace DapperExtensions.Mapper
 {
@@ -12,7 +13,7 @@ namespace DapperExtensions.Mapper
     {
         string SchemaName { get; }
         string TableName { get; }
-        IList<IPropertyMap> Properties { get; }
+        IList<IPropertyMap> ListProperty { get; }
         Type EntityType { get; }
     }
 
@@ -38,7 +39,7 @@ namespace DapperExtensions.Mapper
         /// <summary>
         /// A collection of properties that will map to columns in the database table.
         /// </summary>
-        public IList<IPropertyMap> Properties { get; private set; }
+        public IList<IPropertyMap> ListProperty { get; private set; }
 
         public Type EntityType
         {
@@ -61,7 +62,7 @@ namespace DapperExtensions.Mapper
                                                  { typeof(Guid), KeyType.Guid }, { typeof(Guid?), KeyType.Guid },
                                              };
 
-            Properties = new List<IPropertyMap>();
+            ListProperty = new List<IPropertyMap>();
             Table(typeof(T).Name);
         }
 
@@ -77,20 +78,18 @@ namespace DapperExtensions.Mapper
             TableName = tableName;
         }
 
-        protected virtual void AutoMap()
-        {
-            AutoMap(null);
-        }
-
-        protected virtual void AutoMap(Func<Type, PropertyInfo, bool> canMap)
+        protected virtual void AutoMap(Func<Type, PropertyInfo, bool> canMap = null)
         {
             Type type = typeof(T);
-            bool hasDefinedKey = Properties.Any(p => p.KeyType != KeyType.NotAKey);
-            PropertyMap keyMap = null;
+            bool hasDefinedKey = ListProperty.Any(p => p.KeyType != KeyType.NotKey);
+            List<PropertyMap> keyMaps = new List<PropertyMap>();
             var properties = type.GetProperties();
+            var myAttribute = typeof(KeyAttribute);
+            int keyCount = 0;
+
             foreach (var propertyInfo in properties)
             {
-                if (Properties.Any(p => p.Name.Equals(propertyInfo.Name, StringComparison.InvariantCultureIgnoreCase)))
+                if (ListProperty.Any(p => p.Name.Equals(propertyInfo.Name, StringComparison.InvariantCultureIgnoreCase)))
                 {
                     continue;
                 }
@@ -99,25 +98,41 @@ namespace DapperExtensions.Mapper
                 {
                     continue;
                 }
-
+                //----------------------------------------------------------------------------
                 PropertyMap map = Map(propertyInfo);
+                bool isKey = false;
+                //-----------------------------------------------------------------------------
+                object[] objAttrs = propertyInfo.GetCustomAttributes(myAttribute, true);
+                if (objAttrs.Length > 0)
+                {
+                    isKey = true;
+                    keyCount++;
+                }
+                //-----------------------------------------------------------------------------
+
                 if (!hasDefinedKey)
                 {
                     if (string.Equals(map.PropertyInfo.Name, "id", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        keyMap = map;
+                        keyMaps.Add(map);
+                        var keyType = PropertyTypeKeyTypeMapping.ContainsKey(map.PropertyInfo.PropertyType) ? PropertyTypeKeyTypeMapping[map.PropertyInfo.PropertyType] : KeyType.Assigned;
+                        map.Key(keyType);
                     }
-
-                    if (keyMap == null && map.PropertyInfo.Name.EndsWith("id", true, CultureInfo.InvariantCulture))
+                    else if (isKey && map.PropertyInfo.Name.EndsWith("id", true, CultureInfo.InvariantCulture))
                     {
-                        keyMap = map;
+                        keyMaps.Add(map);
+                        var keyType = PropertyTypeKeyTypeMapping.ContainsKey(map.PropertyInfo.PropertyType) ? PropertyTypeKeyTypeMapping[map.PropertyInfo.PropertyType] : KeyType.Assigned;
+                        map.Key(keyType);
                     }
                 }
             }
 
-            if (keyMap != null)
+            if (keyCount > 1)
             {
-                keyMap.Key(PropertyTypeKeyTypeMapping.ContainsKey(keyMap.PropertyInfo.PropertyType) ? PropertyTypeKeyTypeMapping[keyMap.PropertyInfo.PropertyType] : KeyType.Assigned);
+                foreach (var map in keyMaps)
+                {
+                    map.Key(KeyType.Union);
+                }
             }
         }
 
@@ -137,13 +152,13 @@ namespace DapperExtensions.Mapper
         {
             PropertyMap result = new PropertyMap(propertyInfo);
             this.GuardForDuplicatePropertyMap(result);
-            Properties.Add(result);
+            ListProperty.Add(result);
             return result;
         }
 
         private void GuardForDuplicatePropertyMap(PropertyMap result)
         {
-            if (Properties.Any(p => p.Name.Equals(result.Name)))
+            if (ListProperty.Any(p => p.Name.Equals(result.Name)))
             {
                 throw new ArgumentException(string.Format("Duplicate mapping for property {0} detected.",result.Name));
             }

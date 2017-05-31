@@ -27,25 +27,30 @@ namespace DapperExtensions
         public static string Where<T>(Expression<Func<T, bool>> func)
         {
             string str = "";
+            
             if (func.Body is BinaryExpression)
             {
                 BinaryExpression be = ((BinaryExpression)func.Body);
-                str = BinarExpressionProvider(be.Left, be.Right, be.NodeType);
+                str = BinaryExpressionProvider(be.Left, be.Right, be.NodeType);
+            }
+            else if (func.Body is MethodCallExpression)
+            {
+                throw new Exception("不支持方法");
             }
 
             return str;
         }
 
-        public static string BinarExpressionProvider(Expression left, Expression right, ExpressionType type)
+        public static string BinaryExpressionProvider(Expression left, Expression right, ExpressionType type)
         {
             string sb = "(";
             //先处理左边
-            sb += ExpressionRouter(left,true);
+            sb += ExpressionRouter(left, true);
 
             sb += ExpressionTypeCast(type);
 
             //再处理右边
-            string tmpStr = ExpressionRouter(right,false);
+            string tmpStr = ExpressionRouter(right, false);
             if (tmpStr == "null")
             {
                 if (sb.EndsWith(" ="))
@@ -64,7 +69,7 @@ namespace DapperExtensions
             if (exp is BinaryExpression)
             {
                 BinaryExpression be = ((BinaryExpression)exp);
-                return BinarExpressionProvider(be.Left, be.Right, be.NodeType);
+                return BinaryExpressionProvider(be.Left, be.Right, be.NodeType);
             }
             else if (exp is MemberExpression)
             {
@@ -76,6 +81,11 @@ namespace DapperExtensions
                     {
                         obj = (int)obj;
                     }
+                    else if (obj is DateTime || !(obj is ValueType))
+                    {
+                        obj = "'" + obj + "'";
+                    }
+
                     return obj + "";
                 }
 
@@ -165,6 +175,6 @@ namespace DapperExtensions
             }
         }
 
-      
+
     }
 }

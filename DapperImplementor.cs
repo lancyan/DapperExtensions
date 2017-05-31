@@ -19,7 +19,7 @@ namespace DapperExtensions
 
         T Get<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class;
 
-        void Insert<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout) where T : class;
+        void Inserts<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout) where T : class;
 
         dynamic Insert<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout) where T : class;
 
@@ -31,7 +31,11 @@ namespace DapperExtensions
 
         bool Delete<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout) where T : class;
 
+        bool Delete<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class;
+
         bool Delete<T>(IDbConnection connection, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class;
+
+        bool Deletes<T>(IDbConnection connection, string ids, string cName, IDbTransaction transaction, int? commandTimeout) where T : class;
 
         bool DeleteById<T>(IDbConnection connection, dynamic id, IDbTransaction transaction, int? commandTimeout) where T : class;
 
@@ -88,14 +92,14 @@ namespace DapperExtensions
         public T Get<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             string str = SqlExpession.Where<T>(exp);
-            string sql = string.Format("select * from {0} where {1}", typeof(T).Name, str);
+            string sql = string.IsNullOrEmpty(str) ? string.Format("select * from {0} ", typeof(T).Name) : string.Format("select * from {0} where {1}", typeof(T).Name, str);
             return connection.Query<T>(sql, null, transaction, false, commandTimeout, CommandType.Text).SingleOrDefault();
         }
 
-        public void Insert<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout) where T : class
+        public void Inserts<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
-            var properties = classMap.Properties.Where(p => p.KeyType != KeyType.NotAKey);
+            var properties = classMap.ListProperty.Where(p => p.KeyType != KeyType.NotKey);
 
             foreach (var e in entities)
             {
@@ -117,8 +121,8 @@ namespace DapperExtensions
         public dynamic Insert<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
-            List<IPropertyMap> nonIdentityKeyProperties = classMap.Properties.Where(p => p.KeyType == KeyType.Guid || p.KeyType == KeyType.Assigned).ToList();
-            var identityColumn = classMap.Properties.SingleOrDefault(p => p.KeyType == KeyType.Identity);
+            List<IPropertyMap> nonIdentityKeyProperties = classMap.ListProperty.Where(p => p.KeyType == KeyType.Guid || p.KeyType == KeyType.Assigned).ToList();
+            var identityColumn = classMap.ListProperty.SingleOrDefault(p => p.KeyType == KeyType.Identity);
             foreach (var column in nonIdentityKeyProperties)
             {
                 if (KeyType.Guid.Equals(column.KeyType))
@@ -173,7 +177,7 @@ namespace DapperExtensions
             string sql = SqlGenerator.Update(classMap, predicate, parameters);
             DynamicParameters dynamicParameters = new DynamicParameters();
 
-            var columns = classMap.Properties.Where(p => !(p.Ignored || p.IsReadOnly || p.KeyType == KeyType.Identity));
+            var columns = classMap.ListProperty.Where(p => !(p.Ignored || p.IsReadOnly || p.KeyType == KeyType.Identity));
             foreach (var property in ReflectionHelper.GetObjectValues(entity).Where(property => columns.Any(c => c.Name == property.Key)))
             {
                 dynamicParameters.Add(property.Key, property.Value);
@@ -209,13 +213,65 @@ namespace DapperExtensions
             return Delete<T>(connection, classMap, predicate, transaction, commandTimeout);
         }
 
+        public bool Deletes<T>(IDbConnection connection, string ids, string cName, IDbTransaction transaction, int? commandTimeout) where T : class
+        {
+            if (!string.IsNullOrEmpty(ids))
+            {
+                string[] idArr = ids.Split(',');
+                bool isInteger = true;
+                if (idArr.Length > 0)
+                {
+                    int result;
+                    isInteger = Int32.TryParse(idArr[0], out result);
+                }
+                if (isInteger)
+                {
+                    return connection.Execute(string.Format("delete from {0} where {1} in ({2}) ", typeof(T).Name, ids, cName), null, transaction, commandTimeout, CommandType.Text) > 0;
+                }
+                else
+                {
+                    int len = idArr.Length;
+                    string[] strArr = new string[len];
+                    for (int i = 0; i < len; i++)
+                    {
+                        strArr[i] = "'" + idArr[i] + "'";
+                    }
+                    return connection.Execute(string.Format("delete from {0} where {1} in ({2})", typeof(T).Name, string.Join(",", strArr), cName), null, transaction, commandTimeout, CommandType.Text) > 0;
+                }
+            }
+
+            return false;
+        }
+
         public bool Delete<T>(IDbConnection connection, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
             IPredicate wherePredicate = GetPredicate(classMap, predicate);
             return Delete<T>(connection, classMap, wherePredicate, transaction, commandTimeout);
         }
+        public bool Delete<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class
+        {
+            string str = SqlExpession.Where<T>(exp);
 
+            if (!string.IsNullOrEmpty(str))
+            {
+                return connection.Execute(string.Format("delete from {0} where {1} ", typeof(T).Name, str), null, transaction, commandTimeout, CommandType.Text) > 0;
+            }
+            return false;
+        }
+
+        public bool Delete<T>(IDbConnection connection, IClassMapper classMap, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            string sql = SqlGenerator.Delete(classMap, predicate, parameters);
+            DynamicParameters dynamicParameters = new DynamicParameters();
+            foreach (var parameter in parameters)
+            {
+                dynamicParameters.Add(parameter.Key, parameter.Value);
+            }
+
+            return connection.Execute(sql, dynamicParameters, transaction, commandTimeout, CommandType.Text) > 0;
+        }
         public IEnumerable<T> GetList<T>(IDbConnection connection, IPredicate predicate, IList<ISort> sort, IDbTransaction transaction, int? commandTimeout, bool buffered) where T : class
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
@@ -255,7 +311,7 @@ namespace DapperExtensions
         public int Count<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             string str = SqlExpession.Where<T>(exp);
-            string sql = string.Format("select count(1) from {0} where {1}", typeof(T).Name, str);
+            string sql = string.IsNullOrEmpty(str) ? string.Format("select count(1) from {0} ", typeof(T).Name) : string.Format("select count(1) from {0} where {1}", typeof(T).Name, str);
             return connection.Query<int>(sql, null, transaction, false, commandTimeout, CommandType.Text).Single();
         }
 
@@ -278,6 +334,10 @@ namespace DapperExtensions
                 if (!string.IsNullOrWhiteSpace(where))
                 {
                     sql = string.Format(" {0} where {1}", sql, where);
+                }
+                else
+                {
+                    sql = string.Format("select count(1) from {0} where {1}", tabName, sql);
                 }
             }
             return connection.Query<int>(sql, null, transaction, false, commandTimeout, CommandType.Text).Single();
@@ -332,18 +392,7 @@ namespace DapperExtensions
             return connection.Query<T>(sql, dynamicParameters, transaction, buffered, commandTimeout, CommandType.Text);
         }
 
-        protected bool Delete<T>(IDbConnection connection, IClassMapper classMap, IPredicate predicate, IDbTransaction transaction, int? commandTimeout) where T : class
-        {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
-            string sql = SqlGenerator.Delete(classMap, predicate, parameters);
-            DynamicParameters dynamicParameters = new DynamicParameters();
-            foreach (var parameter in parameters)
-            {
-                dynamicParameters.Add(parameter.Key, parameter.Value);
-            }
-
-            return connection.Execute(sql, dynamicParameters, transaction, commandTimeout, CommandType.Text) > 0;
-        }
+     
 
         protected IPredicate GetPredicate(IClassMapper classMap, object predicate)
         {
@@ -359,7 +408,7 @@ namespace DapperExtensions
         protected IPredicate GetIdPredicate(IClassMapper classMap, object id)
         {
             bool isSimpleType = ReflectionHelper.IsSimpleType(id.GetType());
-            var keys = classMap.Properties.Where(p => p.KeyType != KeyType.NotAKey);
+            var keys = classMap.ListProperty.Where(p => p.KeyType != KeyType.NotKey);
             IDictionary<string, object> paramValues = null;
             IList<IPredicate> predicates = new List<IPredicate>();
             if (!isSimpleType)
@@ -396,7 +445,7 @@ namespace DapperExtensions
 
         protected IPredicate GetKeyPredicate<T>(IClassMapper classMap, T entity) where T : class
         {
-            var whereFields = classMap.Properties.Where(p => p.KeyType != KeyType.NotAKey);
+            var whereFields = classMap.ListProperty.Where(p => p.KeyType != KeyType.NotKey);
             if (!whereFields.Any())
             {
                 throw new ArgumentException("At least one Key column must be defined.");
@@ -496,7 +545,6 @@ namespace DapperExtensions
             return new SequenceReaderResultReader(items);
         }
 
-
         public IEnumerable<dynamic> Query(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered)
         {
             return connection.Query(sql, null, trans, buffered, timeout, CommandType.Text);
@@ -538,44 +586,53 @@ namespace DapperExtensions
 
         public int Update<T>(IDbConnection connection, object updateDict, object keyDict, IDbTransaction trans, int? timeout) where T : class
         {
-            var d1 = updateDict.GetType().GetProperties();
-            var d2 = keyDict.GetType().GetProperties();
+            PropertyInfo[] d1 = updateDict.GetType().GetProperties();
+            PropertyInfo[] d2 = keyDict.GetType().GetProperties();
             StringBuilder s1 = new StringBuilder();
             StringBuilder s2 = new StringBuilder();
-            foreach (PropertyInfo item in d1)
+            foreach (var item in d1)
             {
                 var tp = item.PropertyType;
+                string itemName = item.Name;
+                //if (d2.Count(p => p.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase) && tp.Equals(p.PropertyType)) > 0)
+                //{
+                //    continue;
+                //}
                 if (tp.Equals(typeof(string)) || tp.Equals(typeof(DateTime)))
                 {
-                    s1.Append(item.Name + "='" + item.GetValue(updateDict, null) + "',");
+                    s1.Append(itemName + "='" + item.GetValue(updateDict, null) + "',");
                 }
                 else
                 {
-                    s1.Append(item.Name + "=" + item.GetValue(updateDict, null) + ",");
+                    s1.Append(itemName + "=" + item.GetValue(updateDict, null) + ",");
                 }
             }
+
+
             foreach (var item in d2)
             {
                 var tp = item.PropertyType;
                 if (tp.Equals(typeof(string)) || tp.Equals(typeof(DateTime)))
                 {
-                    s2.Append(item.Name + "='" + item.GetValue(keyDict, null) + "',");
+                    s2.Append(item.Name + "='" + item.GetValue(keyDict, null) + "' and ");
                 }
                 else
                 {
-                    s2.Append(item.Name + "=" + item.GetValue(keyDict, null) + ",");
+                    s2.Append(item.Name + "=" + item.GetValue(keyDict, null) + " and ");
                 }
             }
+
             if (s1.Length > 0)
             {
                 s1.Remove(s1.Length - 1, 1);
             }
             if (s2.Length > 0)
             {
-                s2.Remove(s2.Length - 1, 1);
+                s2.Remove(s2.Length - 4, 4);
             }
             return connection.Execute(string.Format("update {0} set {1} where {2}", typeof(T).Name, s1.ToString(), s2.ToString()), null, trans, timeout, CommandType.Text);
         }
+
         public int Update(IDbConnection connection, string sql, IDbTransaction trans, int? timeout)
         {
             return connection.Execute(sql, null, trans, timeout, CommandType.Text);
@@ -590,7 +647,36 @@ namespace DapperExtensions
                 IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
                 orderBy = SqlGenerator.GetOrderBy(classMap);
             }
-            return connection.Query<T>(string.Format("select * from {0} where {1} order by {2}", typeof(T).Name, str, orderBy), null, trans, buffered, timeout);
+            if (string.IsNullOrEmpty(str))
+            {
+                return connection.Query<T>(string.Format("select * from {0} order by {1}", typeof(T).Name, orderBy), null, trans, buffered, timeout);
+            }
+            else
+            {
+                return connection.Query<T>(string.Format("select * from {0} where {1} order by {2}", typeof(T).Name, str, orderBy), null, trans, buffered, timeout);
+            }
+        }
+
+
+        public IEnumerable<T> Where<T>(IDbConnection connection, Expression<Func<T, bool>> exp, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, int? timeout, bool buffered) where T : class
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("WITH Data_DataSet AS");
+            sb.Append("(SELECT ROW_NUMBER() OVER (ORDER BY " + orderBy + ") AS Row, * FROM (");
+            string str = SqlExpession.Where<T>(exp);
+            if (string.IsNullOrEmpty(str))
+            {
+                sb.Append(string.Format("select * from {0}", typeof(T).Name));
+            }
+            else
+            {
+                sb.Append(string.Format("select * from {0} where {1}", typeof(T).Name, str));
+            }
+
+            sb.Append(")aa)");
+            sb.Append("SELECT * FROM Data_DataSet");
+            sb.Append(string.Format(" WHERE Row between ({0}*{1}+1) and ({1}*({0}+1))", pageIndex, pageSize));
+            return connection.Query<T>(sb.ToString(), null, trans, buffered, timeout);
         }
 
 
@@ -626,19 +712,6 @@ namespace DapperExtensions
             return connection.Query<T>(sb.ToString(), null, trans, buffered, timeout);
         }
 
-
-        public IEnumerable<T> Where<T>(IDbConnection connection, Expression<Func<T, bool>> exp, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, int? timeout, bool buffered) where T : class
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("WITH Data_DataSet AS");
-            sb.Append("(SELECT ROW_NUMBER() OVER (ORDER BY " + orderBy + ") AS Row, * FROM (");
-            string str = SqlExpession.Where<T>(exp);
-            sb.Append(string.Format("select * from {0} where {1}", typeof(T).Name, str));
-            sb.Append(")aa)");
-            sb.Append("SELECT * FROM Data_DataSet");
-            sb.Append(string.Format(" WHERE Row between ({0}*{1}+1) and ({1}*({0}+1))", pageIndex, pageSize));
-            return connection.Query<T>(sb.ToString(), null, trans, buffered, timeout);
-        }
 
         public dynamic Execute<T>(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction transaction, int? commandTimeout, bool buffered) //where T : class
         {

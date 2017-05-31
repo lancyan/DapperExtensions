@@ -145,7 +145,7 @@ namespace DapperExtensions
         /// </summary>
         public static void Insert<T>(this IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
-            Instance.Insert<T>(connection, entities, transaction, commandTimeout);
+            Instance.Inserts<T>(connection, entities, transaction, commandTimeout);
         }
 
         /// <summary>

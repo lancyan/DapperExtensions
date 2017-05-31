@@ -97,7 +97,7 @@ namespace DapperExtensions.Mapper
         /// </summary>
         public PropertyMap Ignore()
         {
-            if (KeyType != KeyType.NotAKey)
+            if (KeyType != KeyType.NotKey)
             {
                 throw new ArgumentException(string.Format("'{0}' is a key field and cannot be ignored.", Name));
             }
@@ -111,7 +111,7 @@ namespace DapperExtensions.Mapper
         /// </summary>
         public PropertyMap ReadOnly()
         {
-            if (KeyType != KeyType.NotAKey)
+            if (KeyType != KeyType.NotKey)
             {
                 throw new ArgumentException(string.Format("'{0}' is a key field and cannot be marked readonly.", Name));
             }
@@ -129,10 +129,10 @@ namespace DapperExtensions.Mapper
         /// <summary>
         /// The property is not a key and is not automatically managed.
         /// </summary>
-        NotAKey,
+        NotKey,
 
         /// <summary>
-        /// The property is an integery-based identity generated from the database.
+        /// The property is an integer-based identity generated from the database.
         /// </summary>
         Identity,
 
@@ -144,6 +144,11 @@ namespace DapperExtensions.Mapper
         /// <summary>
         /// The property is a key that is not automatically managed.
         /// </summary>
-        Assigned
+        Assigned,
+
+        /// <summary>
+        /// Union Key
+        /// </summary>
+        Union
     }
 }

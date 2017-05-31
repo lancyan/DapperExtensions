@@ -7,6 +7,7 @@ using DapperExtensions.Mapper;
 using DapperExtensions.Sql;
 using System.Linq.Expressions;
 using Dapper;
+using System.Collections;
 
 namespace DapperExtensions
 {
@@ -26,14 +27,18 @@ namespace DapperExtensions
 
         T Get<T>(dynamic id, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         T Get<T>(Expression<Func<T, bool>> exp, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
-        void Insert<T>(IEnumerable<T> entities, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
+        void Inserts<T>(IEnumerable<T> entities, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         dynamic Insert<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         bool Update<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
 
         int Update<T>(dynamic updateDict, dynamic keyDict, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
 
         bool Delete<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
+        bool Delete<T>(Expression<Func<T, bool>> exp, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
+
         bool Delete<T>(IPredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
+
+        bool Deletes<T>(string ids, string cName, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
 
         bool DeleteById<T>(dynamic id, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
         IEnumerable<T> GetList<T>(IPredicate predicate, IList<ISort> sort, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = true) where T : class;
@@ -56,9 +61,9 @@ namespace DapperExtensions
 
         IEnumerable<T> Where<T>(string where, string orderBy, int pageIndex, int pageSize, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class;
 
-        int Count<T>(IPredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
-        int Count<T>(string sql = null, string where = null, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
-        int Count<T>(Expression<Func<T, bool>> exp, IDbTransaction transaction = null, int? commandTimeout = null) where T : class;
+        int Count<T>(IPredicate predicate, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
+        int Count<T>(string sql = null, string where = null, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
+        int Count<T>(Expression<Func<T, bool>> exp, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
 
         dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = true);
 
@@ -174,10 +179,10 @@ namespace DapperExtensions
             return (T)_dapper.Get<T>(Connection, exp, transaction, commandTimeout);
         }
 
-        public void Insert<T>(IEnumerable<T> entities, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
+        public void Inserts<T>(IEnumerable<T> entities, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             transaction = transaction ?? _transaction;
-            _dapper.Insert<T>(Connection, entities, transaction, commandTimeout);
+            _dapper.Inserts<T>(Connection, entities, transaction, commandTimeout);
         }
 
         public dynamic Insert<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
@@ -206,7 +211,14 @@ namespace DapperExtensions
 
         public bool Delete<T>(T entity, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
+            transaction = transaction ?? _transaction;
             return _dapper.Delete(Connection, entity, transaction, commandTimeout);
+        }
+
+        public bool Delete<T>(Expression<Func<T, bool>> exp, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
+        {
+            transaction = transaction ?? _transaction;
+            return _dapper.Delete<T>(Connection, exp, transaction, commandTimeout);
         }
 
         public bool Delete<T>(IPredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
@@ -214,6 +226,12 @@ namespace DapperExtensions
             transaction = transaction ?? _transaction;
             return _dapper.Delete<T>(Connection, predicate, transaction, commandTimeout);
         }
+        public bool Deletes<T>(string ids, string cName, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
+        {
+            transaction = transaction ?? _transaction;
+            return _dapper.Deletes<T>(Connection, ids, cName, transaction, commandTimeout);
+        }
+
         public bool DeleteById<T>(dynamic id, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             transaction = transaction ?? _transaction;
@@ -302,22 +320,26 @@ namespace DapperExtensions
 
         public IEnumerable<T> Where<T>(Expression<Func<T, bool>> exp, string orderBy, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class
         {
+            trans = trans ?? _transaction;
             return _dapper.Where<T>(Connection, exp, orderBy, trans, timeout, buffered);
         }
 
 
         public IEnumerable<T> Where<T>(string where, string orderBy, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class
         {
+            trans = trans ?? _transaction;
             return _dapper.Where<T>(Connection, where, orderBy, trans, timeout, buffered);
         }
 
         public IEnumerable<T> Where<T>(string where, string orderBy, int pageIndex, int pageSize, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class
         {
+            trans = trans ?? _transaction;
             return _dapper.Where<T>(Connection, where, orderBy, pageIndex, pageSize, trans, timeout, buffered);
         }
 
         public IEnumerable<T> Where<T>(Expression<Func<T, bool>> exp, string orderBy, int pageIndex, int pageSize, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class
         {
+            trans = trans ?? _transaction;
             return _dapper.Where<T>(Connection, exp, orderBy, pageIndex, pageSize, trans, timeout, buffered);
         }
 

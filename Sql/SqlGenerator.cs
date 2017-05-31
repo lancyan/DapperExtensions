@@ -135,7 +135,7 @@ namespace DapperExtensions.Sql
         
         public virtual string Insert(IClassMapper classMap)
         {
-            var columns = classMap.Properties.Where(p => !(p.Ignored || p.IsReadOnly || p.KeyType == KeyType.Identity));
+            var columns = classMap.ListProperty.Where(p => !(p.Ignored || p.IsReadOnly || p.KeyType == KeyType.Identity));
             if (!columns.Any())
             {
                 throw new ArgumentException("No columns were mapped.");
@@ -164,7 +164,7 @@ namespace DapperExtensions.Sql
                 throw new ArgumentNullException("Parameters");
             }
 
-            var columns = classMap.Properties.Where(p => !(p.Ignored || p.IsReadOnly || p.KeyType == KeyType.Identity));
+            var columns = classMap.ListProperty.Where(p => !(p.Ignored || p.IsReadOnly || p.KeyType == KeyType.Identity));
             if (!columns.Any())
             {
                 throw new ArgumentException("No columns were mapped.");
@@ -222,7 +222,7 @@ namespace DapperExtensions.Sql
 
         public virtual string GetColumnName(IClassMapper map, string propertyName, bool includeAlias)
         {
-            IPropertyMap propertyMap = map.Properties.SingleOrDefault(p => p.Name.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase));
+            IPropertyMap propertyMap = map.ListProperty.SingleOrDefault(p => p.Name.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase));
             if (propertyMap == null)
             {
                 throw new ArgumentException(string.Format("Could not find '{0}' in Mapping.", propertyName));
@@ -238,7 +238,7 @@ namespace DapperExtensions.Sql
 
         public virtual string BuildSelectColumns(IClassMapper classMap)
         {
-            var columns = classMap.Properties
+            var columns = classMap.ListProperty
                 .Where(p => !p.Ignored)
                 .Select(p => GetColumnName(classMap, p, true));
             return columns.AppendStrings();
@@ -247,14 +247,14 @@ namespace DapperExtensions.Sql
         public virtual string GetOrderBy(IClassMapper classMap)
         {
             string orderBy = "id";
-            var keys = classMap.Properties.Where(p => p.KeyType != KeyType.NotAKey);
+            var keys = classMap.ListProperty.Where(p => p.KeyType != KeyType.NotKey);
             if (keys.Count() > 0)
             {
                 orderBy = keys.First().ColumnName;
             }
             else
             {
-                orderBy = classMap.Properties[0].ColumnName;
+                orderBy = classMap.ListProperty[0].ColumnName;
             }
             return orderBy;
         }
