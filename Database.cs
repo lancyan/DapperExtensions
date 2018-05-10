@@ -65,9 +65,9 @@ namespace DapperExtensions
         int Count<T>(string sql = null, string where = null, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
         int Count<T>(Expression<Func<T, bool>> exp, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
 
-        dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = true);
+        dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = false);
 
-      
+        int Execute(string sql, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = false);
     }
 
     public class Database : IDatabase
@@ -344,10 +344,16 @@ namespace DapperExtensions
         }
 
 
-        public dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = true)
+        public dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = false)
         {
             trans = trans ?? _transaction;
             return _dapper.Execute<T>(Connection, pName, paras, trans, timeout, buffered);
+        }
+        
+        public int Execute(string sql, IDbTransaction trans = null, int? timeout = null, bool buffered = false)
+        {
+            trans = trans ?? _transaction;
+            return _dapper.Execute(Connection, sql, trans, timeout, buffered);
         }
     }
 }
