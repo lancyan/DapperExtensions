@@ -68,7 +68,9 @@ namespace DapperExtensions
         int Count<T>(IDbConnection connection, string sql, string where, IDbTransaction transaction, int? commandTimeout) where T : class;
 
         dynamic Execute<T>(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction trans, int? timeout, bool buffered);
-
+        
+        int Execute(IDbConnection connection, string sql, IDbTransaction transaction, int? commandTimeout, bool buffered);
+        
         IMultipleResultReader GetMultiple(IDbConnection connection, GetMultiplePredicate predicate, IDbTransaction transaction, int? commandTimeout);
     }
 
@@ -718,6 +720,15 @@ namespace DapperExtensions
         public dynamic Execute<T>(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction transaction, int? commandTimeout, bool buffered) //where T : class
         {
             return connection.Query<T>(pName, paras, transaction, buffered, commandTimeout, CommandType.StoredProcedure);
+        }
+        
+        public int Execute(IDbConnection connection, string sql, IDbTransaction transaction, int? commandTimeout, bool buffered) //where T : class
+        {
+            if (!string.IsNullOrWhiteSpace(sql))
+            {
+                return connection.Query<int>(sql, null, transaction, buffered, commandTimeout, CommandType.Text).Single();
+            }
+            return 0;
         }
     }
 }
