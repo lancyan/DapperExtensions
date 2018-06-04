@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -50,8 +50,8 @@ namespace DapperExtensions
         IEnumerable<dynamic> Query(string sql, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null);
         IEnumerable<dynamic> Query(string sql, string orderBy, int pageIndex, int pageSize, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null);
 
-        IEnumerable<K> Query<K>(string sql, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null) where K : class;
-        IEnumerable<K> Query<K>(string sql, string orderBy, int pageIndex, int pageSize, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null) where K : class;
+        IEnumerable<K> Query<K>(string sql, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null);// where K : class;
+        IEnumerable<K> Query<K>(string sql, string orderBy, int pageIndex, int pageSize, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null); //where K : class;
 
         IEnumerable<T> Where<T>(Expression<Func<T, bool>> exp, string orderBy, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class;
 
@@ -62,10 +62,10 @@ namespace DapperExtensions
         IEnumerable<T> Where<T>(string where, string orderBy, int pageIndex, int pageSize, int? timeout = null, bool buffered = true, IDbTransaction trans = null) where T : class;
 
         int Count<T>(IPredicate predicate, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
-        int Count<T>(string sql = null, string where = null, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
+        int Count<T>(string sql = null, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
         int Count<T>(Expression<Func<T, bool>> exp, IDbTransaction trans = null, int? commandTimeout = null) where T : class;
 
-        dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = false);
+        dynamic Execute(string pName, DynamicParameters paras, IDbTransaction trans = null, int? commandTimeout = null, bool buffered = false);
 
         int Execute(string sql, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = false);
     }
@@ -266,10 +266,10 @@ namespace DapperExtensions
             return _dapper.Count<T>(Connection, exp, transaction, commandTimeout);
         }
 
-        public int Count<T>(string sql = null, string where = null, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
+        public int Count<T>(string sql = null, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             transaction = transaction ?? _transaction;
-            return _dapper.Count<T>(Connection, sql, where, transaction, commandTimeout);
+            return _dapper.Count<T>(Connection, sql, transaction, commandTimeout);
         }
 
         public IMultipleResultReader GetMultiple(GetMultiplePredicate predicate, IDbTransaction transaction = null, int? commandTimeout = null)
@@ -305,13 +305,13 @@ namespace DapperExtensions
             return _dapper.Query(Connection, sql, orderBy, pageIndex, pageSize, trans, commandType, timeout, buffered);
         }
 
-        public IEnumerable<K> Query<K>(string sql, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null) where K : class
+        public IEnumerable<K> Query<K>(string sql, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null) //where K : class
         {
             trans = trans ?? _transaction;
             return _dapper.Query<K>(Connection, sql, trans, commandType, timeout, buffered);
         }
 
-        public IEnumerable<K> Query<K>(string sql, string orderBy, int pageIndex, int pageSize, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null) where K : class
+        public IEnumerable<K> Query<K>(string sql, string orderBy, int pageIndex, int pageSize, CommandType? commandType, int? timeout, bool buffered, IDbTransaction trans = null) //where K : class
         {
             trans = trans ?? _transaction;
             return _dapper.Query<K>(Connection, sql, orderBy, pageIndex, pageSize, trans, commandType, timeout, buffered);
@@ -344,12 +344,12 @@ namespace DapperExtensions
         }
 
 
-        public dynamic Execute<T>(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = false)
+        public dynamic Execute(string pName, DynamicParameters paras, IDbTransaction trans = null, int? timeout = null, bool buffered = false)
         {
             trans = trans ?? _transaction;
-            return _dapper.Execute<T>(Connection, pName, paras, trans, timeout, buffered);
+            return _dapper.Execute(Connection, pName, paras, trans, timeout, buffered);
         }
-        
+
         public int Execute(string sql, IDbTransaction trans = null, int? timeout = null, bool buffered = false)
         {
             trans = trans ?? _transaction;
