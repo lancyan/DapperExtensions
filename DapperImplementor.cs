@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Dynamic;
@@ -49,9 +49,9 @@ namespace DapperExtensions
 
         IEnumerable<dynamic> Query(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered);
 
-        IEnumerable<T> Query<T>(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where T : class;
+        IEnumerable<T> Query<T>(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered);//where T : class;
 
-        IEnumerable<T> Query<T>(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where T : class;
+        IEnumerable<T> Query<T>(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered);// where T : class;
 
         IEnumerable<T> Where<T>(IDbConnection connection, Expression<Func<T, bool>> exp, string orderBy, IDbTransaction trans, int? timeout, bool buffered) where T : class;
 
@@ -65,12 +65,12 @@ namespace DapperExtensions
 
         int Count<T>(IDbConnection connection, Expression<Func<T, bool>> exp, IDbTransaction transaction, int? commandTimeout) where T : class;
 
-        int Count<T>(IDbConnection connection, string sql, string where, IDbTransaction transaction, int? commandTimeout) where T : class;
+        int Count<T>(IDbConnection connection, string sql, IDbTransaction transaction, int? commandTimeout) where T : class;
 
-        dynamic Execute<T>(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction trans, int? timeout, bool buffered);
-        
+        dynamic Execute(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction trans, int? timeout, bool buffered);
+
         int Execute(IDbConnection connection, string sql, IDbTransaction transaction, int? commandTimeout, bool buffered);
-        
+
         IMultipleResultReader GetMultiple(IDbConnection connection, GetMultiplePredicate predicate, IDbTransaction transaction, int? commandTimeout);
     }
 
@@ -87,7 +87,7 @@ namespace DapperExtensions
         {
             IClassMapper classMap = SqlGenerator.Configuration.GetMap<T>();
             IPredicate predicate = GetIdPredicate(classMap, id);
-            T result = GetList<T>(connection, classMap, predicate, null, transaction, commandTimeout, true).SingleOrDefault();
+            T result = GetList<T>(connection, classMap, predicate, null, transaction, commandTimeout, true).FirstOrDefault();
             return result;
         }
 
@@ -95,7 +95,7 @@ namespace DapperExtensions
         {
             string str = SqlExpession.Where<T>(exp);
             string sql = string.IsNullOrEmpty(str) ? string.Format("select * from {0} ", typeof(T).Name) : string.Format("select * from {0} where {1}", typeof(T).Name, str);
-            return connection.Query<T>(sql, null, transaction, false, commandTimeout, CommandType.Text).SingleOrDefault();
+            return connection.Query<T>(sql, null, transaction, false, commandTimeout, CommandType.Text).FirstOrDefault();
         }
 
         public void Inserts<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout) where T : class
@@ -228,7 +228,7 @@ namespace DapperExtensions
                 }
                 if (isInteger)
                 {
-                    return connection.Execute(string.Format("delete from {0} where {1} in ({2}) ", typeof(T).Name, ids, cName), null, transaction, commandTimeout, CommandType.Text) > 0;
+                    return connection.Execute(string.Format("delete from {0} where {1} in ({2}) ", typeof(T).Name, cName, ids), null, transaction, commandTimeout, CommandType.Text) > 0;
                 }
                 else
                 {
@@ -317,32 +317,15 @@ namespace DapperExtensions
             return connection.Query<int>(sql, null, transaction, false, commandTimeout, CommandType.Text).Single();
         }
 
-        public int Count<T>(IDbConnection connection, string sql, string where, IDbTransaction transaction, int? commandTimeout) where T : class
+        public int Count<T>(IDbConnection connection, string sql, IDbTransaction transaction, int? commandTimeout) where T : class
         {
             string tabName = typeof(T).Name;
-            if (string.IsNullOrWhiteSpace(sql))
+            if (!string.IsNullOrWhiteSpace(sql))
             {
-                if (string.IsNullOrWhiteSpace(where))
-                {
-                    sql = string.Format("select count(1) from {0}", tabName);
-                }
-                else
-                {
-                    sql = string.Format("select count(1) from {0} where {1}", tabName, where);
-                }
+                return connection.Query<int>(sql, null, transaction, false, commandTimeout, CommandType.Text).Single();
             }
-            else
-            {
-                if (!string.IsNullOrWhiteSpace(where))
-                {
-                    sql = string.Format(" {0} where {1}", sql, where);
-                }
-                else
-                {
-                    sql = string.Format("select count(1) from {0} where {1}", tabName, sql);
-                }
-            }
-            return connection.Query<int>(sql, null, transaction, false, commandTimeout, CommandType.Text).Single();
+
+            return 0;
         }
 
         public IMultipleResultReader GetMultiple(IDbConnection connection, GetMultiplePredicate predicate, IDbTransaction transaction, int? commandTimeout)
@@ -394,7 +377,7 @@ namespace DapperExtensions
             return connection.Query<T>(sql, dynamicParameters, transaction, buffered, commandTimeout, CommandType.Text);
         }
 
-     
+
 
         protected IPredicate GetPredicate(IClassMapper classMap, object predicate)
         {
@@ -565,12 +548,12 @@ namespace DapperExtensions
         }
 
 
-        public IEnumerable<K> Query<K>(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where K : class
+        public IEnumerable<K> Query<K>(IDbConnection connection, string sql, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) //where K : class
         {
             return connection.Query<K>(sql, null, trans, buffered, timeout, CommandType.Text);
         }
 
-        public IEnumerable<K> Query<K>(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) where K : class
+        public IEnumerable<K> Query<K>(IDbConnection connection, string sql, string orderBy, int pageIndex, int pageSize, IDbTransaction trans, CommandType? commandType, int? timeout, bool buffered) //where K : class
         {
             int start = pageIndex * pageSize + 1;
             int end = pageSize * (pageIndex + 1);
@@ -596,12 +579,10 @@ namespace DapperExtensions
             {
                 var tp = item.PropertyType;
                 string itemName = item.Name;
-
                 //if (d2.Count(p => p.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase) && tp.Equals(p.PropertyType)) > 0)
                 //{
                 //    continue;
                 //}
-
                 if (tp.Equals(typeof(string)) || tp.Equals(typeof(DateTime)))
                 {
                     s1.Append(itemName + "='" + item.GetValue(updateDict, null) + "',");
@@ -717,16 +698,16 @@ namespace DapperExtensions
         }
 
 
-        public dynamic Execute<T>(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction transaction, int? commandTimeout, bool buffered) //where T : class
+        public dynamic Execute(IDbConnection connection, string pName, DynamicParameters paras, IDbTransaction transaction, int? commandTimeout, bool buffered)
         {
-            return connection.Query<T>(pName, paras, transaction, buffered, commandTimeout, CommandType.StoredProcedure);
+            return connection.Query(pName, paras, transaction, buffered, commandTimeout, CommandType.StoredProcedure);
         }
-        
-        public int Execute(IDbConnection connection, string sql, IDbTransaction transaction, int? commandTimeout, bool buffered) //where T : class
+
+        public int Execute(IDbConnection connection, string sql, IDbTransaction transaction, int? commandTimeout, bool buffered)
         {
             if (!string.IsNullOrWhiteSpace(sql))
             {
-                return connection.Query<int>(sql, null, transaction, buffered, commandTimeout, CommandType.Text).Single();
+                return connection.Execute(sql, null, transaction, commandTimeout, CommandType.Text);
             }
             return 0;
         }
