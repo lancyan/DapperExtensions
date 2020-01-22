@@ -7,6 +7,9 @@ namespace DapperExtensions.Sql
 {
     public class SqlCeDialect : SqlDialectBase
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public override char OpenQuote
         {
             get { return '['; }
