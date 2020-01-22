@@ -5,7 +5,7 @@ using System.Text;
 using System.Collections;
 using System.Reflection;
 
-namespace DapperExtensions
+namespace DapperExtensions.Reflector
 {
 
 	/// <summary>

@@ -6,7 +6,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 
 
-namespace DapperExtensions
+namespace DapperExtensions.Reflector
 {
 	public delegate object CtorDelegate();
 

@@ -26,7 +26,7 @@ using System.Reflection;
 */
 //-------------------------------------------------------------
 
-namespace DapperExtensions
+namespace DapperExtensions.Reflector
 {
 	#region 委托定义
 

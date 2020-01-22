@@ -29,7 +29,7 @@ using System.Collections;
 //-------------------------------------------------------------
 
 
-namespace DapperExtensions
+namespace DapperExtensions.Reflector
 {
 	/// <summary>
 	/// 定义读属性操作的接口
